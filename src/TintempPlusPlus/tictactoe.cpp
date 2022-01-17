@@ -1,16 +1,12 @@
-// #include "./uniqueid.hpp"
-
+#include "./uniqueid.hpp"
 #include "tictactoe.hpp"
 
 
-ttt::ttt()
+ttt::ttt(const dpp::snowflake player_1, const dpp::snowflake player_2)
 {
+    this->player_1 = player_1;
+    this->player_2 = player_2;
 	init();
-}
-
-ttt::ttt(int uid)
-{
-
 }
 
 ttt::~ttt()
@@ -18,12 +14,15 @@ ttt::~ttt()
     // on destruction
 }
 
-void ttt::init() {
-
+void ttt::init() 
+{
+    init_uid((*new UniqueID).id);
 }
 
 
 
+#pragma region Confirm button 
+// a confiem button to challenge player 2
 
 
 std::pair<std::string, std::string> ttt::confirm_button::get_button_id()
@@ -31,20 +30,21 @@ std::pair<std::string, std::string> ttt::confirm_button::get_button_id()
     return this->btn_id;
 }
 
-void ttt::confirm_button::init(const dpp::snowflake user_id, int uid_y, int uid_n)
+void ttt::confirm_button::init(const dpp::snowflake player_1, const dpp::snowflake player_2, int uid_y, int uid_n)
 {
 	this->id.first = uid_y;
 	this->id.second = uid_n;
-	this->user_id = user_id;
+    this->player_1 = player_1;
+    this->player_2 = player_2;
     set_btn_id(this->id);
 } 
 
-const dpp::snowflake ttt::confirm_button::get_user(){
-    return this->user_id;
+const std::pair<dpp::snowflake, dpp::snowflake> const ttt::confirm_button::get_user(){
+    return std::make_pair(this->player_1, this->player_2);
 }
 
-ttt::confirm_button::confirm_button(const dpp::snowflake user_id, int uid_y, int uid_n) {
-    this->init(user_id, uid_y, uid_n);
+ttt::confirm_button::confirm_button(const dpp::snowflake player_1, const dpp::snowflake player_2) {
+    this->init(player_1, player_2, (*new UniqueID).id, (*new UniqueID).id);
 }
 
 const std::pair<int, int> ttt::confirm_button::get_id()
@@ -61,8 +61,10 @@ void ttt::confirm_button::set_id(std::pair<int, int> nid)
 void ttt::confirm_button::set_btn_id(std::pair<int, int> nid)
 {
     std::stringstream ss_1; ss_1 << "confm_" << nid.first << "_y";
-    std::stringstream ss_2; ss_2 << "confm_" << nid.second << "_y";
+    std::stringstream ss_2; ss_2 << "confm_" << nid.second << "_n";
 
     this->btn_id.first = ss_1.str();
     this->btn_id.second = ss_2.str();
 }
+
+#pragma endregion

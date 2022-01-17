@@ -1,5 +1,3 @@
-
-
 #ifndef TICTACTOE_HPP
 #define TICTACTOE_HPP
 
@@ -12,51 +10,66 @@ class ttt
 {
 private:
 	// origin message id of this ttt
-	dpp::snowflake origin;  
+	dpp::message origin;  
 
     int uid;
     dpp::snowflake player_1;
     dpp::snowflake player_2;
 
+    void init_uid(int &uid) { this->uid = uid; };
+    void init();
 public:
     struct confirm_button
     {
     private:
         std::pair<int, int> id;
-        std::pair <std::string, std::string> btn_id;
+        std::pair<std::string, std::string> btn_id;
+        dpp::message replied_msg;
 
-        dpp::snowflake user_id;
+        dpp::snowflake player_1;
+        dpp::snowflake player_2;
 
-        void init(const dpp::snowflake user_id, int uid_y, int uid_n);
+        void init(const dpp::snowflake player_1, const dpp::snowflake player_2, int uid_y, int uid_n);
     public:
         dpp::component component;
+        struct stat {
+            bool is_player_1_confm = false;
+            bool is_player_2_confm = false;
+            bool replied = false;
+            bool cancelled = false;
+        }; stat st;
        
-        const dpp::snowflake const get_user();
+        const std::pair<dpp::snowflake, dpp::snowflake> const get_user();
         const std::pair<int, int> const get_id();
         std::pair<std::string, std::string> get_button_id();
+        dpp::message get_replied_msg() { return this->replied_msg; }
 
         
         void set_id(std::pair<int, int> nid);
         void set_btn_id(std::pair<int, int> nid);
+        void set_replied_msg(dpp::message replied_msg) { this->replied_msg = replied_msg; }
 
-        confirm_button(const dpp::snowflake user_id, int uid_y, int uid_n);
+        confirm_button(const dpp::snowflake player_1, const dpp::snowflake player_2);
     };
+
 	// --- Constructors ---
-	// --- Constructors ---
-    ttt(int uid);
-	ttt();
+    ttt(const dpp::snowflake player_1, const dpp::snowflake player_2);
 
 	// --- Destructors ---
     ~ttt();
 
 	// --- Accessors ---
-	const dpp::snowflake& get_origin() const { return this->origin;  }
+	dpp::message& get_origin() { return this->origin;  }
+    const std::pair<dpp::snowflake, dpp::snowflake> get_player() const { return std::make_pair(this->player_1, this->player_2); }
+    const int& get_uid() const { return this->uid; }
 
 	// --- Modifiers ---
-	void set_origin(dpp::snowflake& message_id) { this->origin = message_id; }
+	void set_origin(dpp::message origin_message) { this->origin = origin_message; }
+    void set_origin_embed(dpp::embed &new_embed) { this->origin.embeds.front() = new_embed; }
 
 	// --- Functions ---
-	void init();
+	
+    
 };
 
 

@@ -9,7 +9,7 @@
 #include <vector>
 #include <sstream>
 
-#include "./uniqueid.hpp"
+// #include "./uniqueid.hpp"
 #include "./tictactoe.hpp"
 
 #include <queue>
@@ -35,8 +35,6 @@ int main()
     try {
         // Be sure to place your token in the line below, and uncomment the line
         // Follow steps here to get a token: https://dpp.dev/creating-a-bot-application.html
-        
-
         bot.on_ready([&bot](const dpp::ready_t& event) {
             bot.log(dpp::ll_info, "Logged in as " + bot.me.username);
             });
@@ -55,6 +53,8 @@ int main()
 
 
     initCommands(bot);
+    // initButtons(bot);
+
 
     bot.start(false);
     return 0;
@@ -68,8 +68,8 @@ void initCommands(dpp::cluster &bot)
 
         newCommand("ttt", bot, message, &tictactoe);
     });
-
 }
+
 
 void newCommand(std::string command_name, dpp::cluster& bot, dpp::message_create_t& message, void(*command_event)(dpp::cluster&, dpp::message_create_t&))
 {
@@ -96,10 +96,10 @@ void ping(dpp::cluster& bot, dpp::message_create_t& message)
 }
 
 
-// tictactoe global queue cataching
+
 std::queue<ttt::confirm_button> global_queue;
-std::unique_ptr<ttt::confirm_button> push_onto_queue(const dpp::snowflake user_id, int uid_y, int uid_n) {
-    auto my_var = std::make_unique<ttt::confirm_button>(user_id, uid_y, uid_n);
+std::unique_ptr<ttt::confirm_button> push_onto_queue(const dpp::snowflake player_1, const dpp::snowflake player_2) {
+    auto my_var = std::make_unique<ttt::confirm_button>(player_1, player_2);
 
     global_queue.push(*my_var);
 
@@ -113,54 +113,100 @@ void pop_one_from_queue() {
 }
 
 
+// tictactoe global queue cataching
+std::list<std::pair<ttt,ttt::confirm_button>> ttt_list_g;
+std::pair<ttt, ttt::confirm_button> push_onto_list(const dpp::snowflake player_1, const dpp::snowflake player_2)
+{
+    auto data = std::make_pair(ttt(player_1, player_2), ttt::confirm_button(player_1, player_2));
+    //auto data = std::make_pair(std::make_unique<ttt>(player_1, player_2), std::make_unique<ttt::confirm_button>(player_1, player_2));
+
+    ttt_list_g.push_back(data);
+
+    return data;
+}
+void erase_one_from_list(std::list<std::pair<ttt, ttt::confirm_button>>::iterator i) {
+    ttt_list_g.erase(i);
+}
+
+
+
+
 void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
 {   
-    std::vector mention = message.msg.mentions;
-        
-    //std::list <ttt> confm_list;
-    //std::list<ttt>::iterator i = confm_list.begin();
-    //std::advance(i, 3);
+    
 
-    //confm_list.push_back(*new ttt());
-    //confm_list.back().init();
+    // std::list<std::pair<ttt, ttt::confirm_button>>::iterator i = ttt_list_g.begin();
+    // std::advance(i, 3);
 
+
+
+    std::vector mention = message.msg.mentions; 
     /**pick first mentioned guy if there's mention in the message
      * Notes: the mention.size() already filter bot mention out :D
      */ 
     if (mention.size() > 0) 
     {   
-        std::cout << "mentions: " << mention[0].first.id << "\n";
 
-        dpp::embed confirm_embed;
-        dpp::embed_author author;
+
+         /*  init a new ttt operation
+         │
+         ├─ 📂ttt_opt: std::pair
+         │  ├─ 1st: ttt class
+         │  │  *manage tic-tac-toe main event.
+         │  │
+         │  └─ 2nd: ttt::confirm button struct
+         │     *confirm player is playing the game or not.
+        */
+        auto ttt_opt = push_onto_list(message.msg.author.id, mention[0].first.id);
+
+        std::cout << "init new ttt id: "  << ttt_opt.first.get_uid()        << "\n";
+        std::cout << "ttt: player 1: " << ttt_opt.first.get_player().first  << "\n";
+        std::cout << "ttt: player 2: " << ttt_opt.first.get_player().second << "\n";
+
+        /* create an embed */
+        dpp::embed confirm_embed;    dpp::embed_author author; 
         author.icon_url = message.msg.author.get_avatar_url();
         author.name = message.msg.author.username;
+        std::stringstream msg; msg << "hey <@" << ttt_opt.first.get_player().second << ">, <@" << ttt_opt.first.get_player().first << "> want to play tic-tac-toe with you";
 
-        std::stringstream msg; msg << "hey <@" << mention[0].first.id << ">" << mention[0].first.discriminator << " wanna play tic-tac-toe?";
+        enum Colors {
+            AQUA = 0x00FFFF,
+            BLACK = 0x000000,
+            WHITE = 0xFFFFFF,
+            YELLOW = 0xFFFF00,
+            RED = 0xFF0000,
+            GREEN = 0x00FF00,
+            BLUE = 0x0000FF,
+        };
+        confirm_embed.set_title("Hey :right_facing_fist:").set_description(msg.str()).set_author(author).set_color(YELLOW); // rgb(255, 255, 102)
 
-        confirm_embed.set_description(msg.str()).set_author(author);
 
-
-        ttt ttt_cmd;
         // UniqueID uid_y, uid_n;
-        ttt::confirm_button c_button(mention[0].first.id, uid_y.id, uid_n.id);
-        auto z = push_onto_queue(mention[0].first.id, uid_y.id, uid_n.id);
+
+
+        // ttt::confirm_button c_button(mention[0].first.id, uid_y.id, uid_n.id);
+
+
+        // auto z = push_onto_queue(message.msg.author.id, mention[0].first.id);
+        
+        
+        
         // auto y = std::make_shared<ttt::confirm_button>();
 
         
         
-        std::shared_ptr<ttt::confirm_button> y2{ new ttt::confirm_button(mention[0].first.id, uid_y.id, uid_n.id) };
+        // std::shared_ptr<ttt::confirm_button> y2{ new ttt::confirm_button(mention[0].first.id, uid_y.id, uid_n.id) };
         // global_queue.push(c_button);
         
 #pragma region components_row
-        z.get()->component
+        ttt_opt.second.component
             .add_component(
                 dpp::component()
                 .set_label("YES")
                 .set_type(dpp::cot_button)
                 //.set_emoji(u8"🗿")
                 .set_style(dpp::cos_success)
-                .set_id(z.get()->get_button_id().first)
+                .set_id(ttt_opt.second.get_button_id().first)
                 )
             .add_component(
                 dpp::component()
@@ -168,21 +214,19 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
                 .set_type(dpp::cot_button)
                 //.set_emoji(u8"🧻")
                 .set_style(dpp::cos_danger)
-                .set_id(z.get()->get_button_id().second)
+                .set_id(ttt_opt.second.get_button_id().second)
             );
 #pragma endregion
 
-        std::cout << "1: " << z.get()->get_button_id().first << "\n";
-
-
         bot.message_create(dpp::message(message.msg.channel_id, confirm_embed)
-            .add_component(z.get()->component)
+            .add_component(ttt_opt.second.component)
             , ([&](const dpp::confirmation_callback_t& callback) // catch error from callback
                 {
                     if (!callback.is_error())
                     {       
                         bot.log(dpp::ll_info, "command exit: succeed");
                         auto deployed_msg = std::get<dpp::message>(callback.value);
+
                         on_confirm_click(bot, deployed_msg);
 
                     }
@@ -194,6 +238,9 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
             )
         );
     }
+
+#pragma region unused
+
 
 
 //    // ======================
@@ -377,60 +424,399 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
 
    std::cout << my_int << "how do i make my_int 69\n";
         */
+#pragma endregion
 }
 
-void on_confirm_click(dpp::cluster& bot, dpp::message& message)
+
+
+
+void on_confirm_click(dpp::cluster& bot, dpp::message &message)
 {
     std::cout << "entered on_confirm_click" << "\n";
-    bot.on_button_click([&](const dpp::button_click_t& event) 
+
+    bot.on_button_click([&, message](const dpp::button_click_t& event)
         {
-            ttt::confirm_button button = get_one_from_queue(); // get 
-            /*
-            event.thinking([&event](auto v) 
+            /* setup interaction-finish button */
+            dpp::component confirmed_button;
+            confirmed_button
+                .add_component(
+                    dpp::component()
+                    .set_label("Confirmed")
+                    .set_type(dpp::cot_button)
+                    .set_style(dpp::cos_secondary)
+                    .set_disabled(true)
+                )
+                .add_component(
+                    dpp::component()
+                    .set_label("Confirmed")
+                    .set_type(dpp::cot_button)
+                    .set_style(dpp::cos_secondary)
+                    .set_disabled(true)
+                );
+
+            // fetch out global ttt storage
+            if (!ttt_list_g.empty())
             {
-                std::cout << "thinking done!"<< "\n";
-            });
-            */
-
-            if (!event.command.usr.id == button.get_user())
-            {
-                event.reply(dpp::ir_channel_message_with_source, "Hey you cant click that!");
-            }
-
-            while (!global_queue.empty() && event.command.usr.id == button.get_user())
-            {
-                
-
-                std::cout << "event id: " << event.custom_id << "\n";
-                std::cout << "button id: " << button.get_button_id().first << "\n";
-                std::cout << "user id: " << event.command.usr.id << "\n";
-                std::cout << "clicker id: " << button.get_user() << "\n";
-
-                if (event.custom_id == button.get_button_id().first && event.command.usr.id == button.get_user()) // clicked yes
+                for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++) // iterate thru our saved list
                 {
-                    dpp::embed new_embed;
-                    new_embed.set_description("+1");
-                    message.add_embed(new_embed);
-
-                    event.reply(dpp::ir_update_message, "You clicked: Yes", [&event](auto v)
+#pragma region ANSWERED_YES
+                    if (event.custom_id == itr->second.get_button_id().first)
                     {
-                        std::cout << "thinking done!" << "\n";
-                    });
-                    
-                    
+                        // we found the itrerator to put message in!
+                        try
+                        {
+                            itr->first.set_origin(message);
+                            std::cout << "registered ttt message: " << itr->first.get_origin().id << "\n";
+                        }
+                        catch (const std::exception& e) {
+                            std::cout << "Error: " << e.what() << "\n";
+                        }
+
+                        dpp::embed start_embed;
+                        std::stringstream msg; msg << "<@" << itr->first.get_player().first << "> ***vs*** <@" << itr->first.get_player().second << ">";
+                        start_embed.set_title("Game Started!").set_description(msg.str()).set_color(0x00FF00);
+                        itr->first.set_origin_embed(start_embed);
+
+                        if (event.command.usr.id == itr->second.get_user().first)
+                        {
+                            std::cout << itr->second.get_user().first << "[1] clicked the button id: " << event.custom_id << "\n";
+
+                            if (itr->second.st.is_player_1_confm) return;
+                            itr->second.st.is_player_1_confm = true;
+
+                            /*  this player is first to confirm -> send replie message  */
+                            if (!itr->second.st.is_player_2_confm)
+                            {
+                                std::stringstream msg; msg << "<@" << itr->second.get_user().first << "> confirmed! " << "*(1/2)*";
+
+                                event.reply(dpp::ir_channel_message_with_source, msg.str(), [event, itr](dpp::confirmation_callback_t callback)
+                                {
+                                    event.get_original_response([itr](dpp::confirmation_callback_t callback)
+                                        {
+                                            if (!callback.is_error())
+                                            {   // store replied message in or global list
+                                                itr->second.set_replied_msg(std::get<dpp::message>(callback.value));
+                                                std::cout << "get response success!" << "\n";
+                                                itr->second.st.replied = true;
+                                            }
+                                            else
+                                            {
+                                                std::cout << "get response message error: " << callback.get_error().message << "\n";
+                                                for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                            }
+
+
+                                        });
+                                });
+                            }
+
+                            /*  both player is confirmed -> send tictactoe game!  */
+                            if (itr->second.st.is_player_2_confm)
+                            {
+                                bot.message_edit(itr->first.get_origin().add_component(confirmed_button)
+                                    , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
+                                {
+
+                                    if (callback.is_error())
+                                    {
+                                        std::cout << "edit message error: " << callback.get_error().message << "\n";
+                                        for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                    }
+                                    else
+                                    {
+                                        bot.log(dpp::ll_info, "command exit: succeed");
+                                    }
+                                }
+                                );
+
+                                event.reply(dpp::ir_channel_message_with_source, "...", [event, itr](dpp::confirmation_callback_t callback)
+                                    {
+                                        if (!callback.is_error())
+                                        { 
+
+                                            std::cout << "get response success!" << "\n";
+                                            itr->second.st.replied = true;
+                                        }
+                                        else
+                                        {
+                                            std::cout << "get response message error: " << callback.get_error().message << "\n";
+                                            for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                        }
+                                    }
+                                );
+
+
+
+                            }
+#pragma region unused
+
+
+                            
+
+
+
+
+
+
+
+                            //if (!itr->second.st.replied)
+                            //{
+                            //    event.reply(dpp::ir_channel_message_with_source, msg.str(), [event](dpp::confirmation_callback_t callback)
+                            //        {
+                            //            event.get_original_response([](dpp::confirmation_callback_t callback)
+                            //            {
+                            //                if (!callback.is_error())
+                            //                {
+                            //                    auto deployed_msg = std::get<dpp::message>(callback.value);
+                            //                    std::cout << "get response success!" << "\n";
+                            //                }
+                            //                else
+                            //                {
+                            //                    std::cout << "get response message error: " << callback.get_error().message << "\n";
+                            //                    auto errors = callback.get_error().errors;
+                            //                    for (auto i : errors)
+                            //                    {
+                            //                        std::cout << i.reason << "\n";
+                            //                    }
+                            //                }
+
+
+                            //            });
+                            //        });
+
+
+
+                            //}
+                            //else
+                            //{
+                            //    event.get_original_response([](dpp::confirmation_callback_t callback)
+                            //        {
+                            //            if (!callback.is_error())
+                            //            {
+                            //                auto deployed_msg = std::get<dpp::message>(callback.value);
+                            //                std::cout << "get response success!" << "\n";
+                            //            }
+                            //            else
+                            //            {
+                            //                std::cout << "get response message error: " << callback.get_error().message << "\n";
+                            //                auto errors = callback.get_error().errors;
+                            //                for (auto i : errors)
+                            //                {
+                            //                    std::cout << i.reason << "\n";
+                            //                }
+                            //            }
+                            //        
+                            //        
+                            //        });
+
+
+
+                            //    
+                            //    event.edit_response(msg.str(), [](dpp::confirmation_callback_t callback)
+                            //        {
+                            //            if (!callback.is_error())
+                            //            {
+                            //                std::cout << "edit success!" << "\n";
+                            //            }
+                            //            else
+                            //            {
+                            //                std::cout << "edit message error: " << callback.get_error().message << "\n";
+                            //                auto errors = callback.get_error().errors;
+                            //                for (auto i : errors)
+                            //                {
+                            //                    std::cout << i.reason << "\n";
+                            //                }
+                            //            }
+
+                            //        });
+                            //        
+                            //}
+                            //itr->second.st.replied = true;
+
+
+#pragma endregion
+                        }
+
+                        if (event.command.usr.id == itr->second.get_user().second)
+                        {
+                            std::cout << itr->second.get_user().first << "[2] clicked the button id: " << event.custom_id << "\n";
+
+                            if (itr->second.st.is_player_2_confm) return;
+                            itr->second.st.is_player_2_confm = true;
+
+                            /*  this player is first to confirm -> send replie message  */
+                            if (!itr->second.st.is_player_1_confm)
+                            {
+                                std::stringstream msg; msg << "<@" << itr->second.get_user().second << "> confirmed! " << "*(1/2)*";
+
+                                event.reply(dpp::ir_channel_message_with_source, msg.str(), [event, itr](dpp::confirmation_callback_t callback)
+                                {
+                                    event.get_original_response([itr](dpp::confirmation_callback_t callback)
+                                        {
+                                            if (!callback.is_error())
+                                            {   // store replied message in or global list
+                                                itr->second.set_replied_msg(std::get<dpp::message>(callback.value));
+                                                std::cout << "get response success!" << "\n";
+                                                itr->second.st.replied = true;
+                                            }
+                                            else
+                                            {
+                                                std::cout << "get response message error: " << callback.get_error().message << "\n";
+                                                for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                            }
+
+
+                                        });
+                                });
+                            }
+
+                            /*  both player is confirmed -> send tictactoe game!  */
+                            if (itr->second.st.is_player_1_confm)
+                            {
+                                //dpp::embed start_embed;
+                                //std::stringstream msg; msg << "<@" << itr->first.get_player().first << "> ***vs*** <@" << itr->first.get_player().second << ">";
+                                //start_embed.set_title("Game Started!").set_description(msg.str())/*.set_color(0x00FF00)*/;
+
+                                bot.message_edit(itr->first.get_origin().add_component(confirmed_button)
+                                    , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
+                                {
+                                    
+                                    if (callback.is_error())
+                                    {
+                                        std::cout << "edit message error: " << callback.get_error().message << "\n";
+                                        for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                    }
+                                    else
+                                    {
+                                        bot.log(dpp::ll_info, "command exit: succeed");
+                                    }
+                                        
+                                }
+                                );
+
+                                event.reply(dpp::ir_channel_message_with_source, "...", [event, itr](dpp::confirmation_callback_t callback)
+                                {
+                                    if (!callback.is_error())
+                                    {
+                                        std::cout << "get response success!" << "\n";
+                                        itr->second.st.replied = true;
+                                    }
+                                    else
+                                    {
+                                        std::cout << "get response message error: " << callback.get_error().message << "\n";
+                                        for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                    }
+                                }
+                                );
+
+
+                            }
+                        }
+                    }
+            #pragma endregion
+            #pragma region ANSWERED_NO
+                    if (event.custom_id == itr->second.get_button_id().second)
+                    {
+                        if (event.command.usr.id == itr->second.get_user().first)
+                        {
+                            std::cout << itr->second.get_user().first << "[3] clicked the button id: " << event.custom_id << "\n";
+
+                            if (itr->second.st.is_player_1_confm) return;
+                            itr->second.st.is_player_1_confm = false;
+
+                            std::stringstream msg; msg << "<@" << itr->second.get_user().first << "> ***Declined!!!***";
+
+                            if (!itr->second.st.replied) event.reply(dpp::ir_update_message, msg.str());
+                            else  event.edit_response(msg.str()); 
+                            
+                            itr->second.st.replied = true;
+                        }
+
+                        if (event.command.usr.id == itr->second.get_user().second)
+                        {
+                            std::cout << itr->second.get_user().second << "[4] clicked the button id: " << event.custom_id << "\n";
+
+                            if (itr->second.st.is_player_2_confm) return;
+                            itr->second.st.is_player_2_confm = false;
+
+                            std::stringstream msg; msg << "<@" << itr->second.get_user().second << "> ***Declined!!!***";
+
+                            if (!itr->second.st.replied) event.reply(dpp::ir_update_message, msg.str());
+                            else  event.edit_response(msg.str()); 
+                            
+                            itr->second.st.replied = true;
+                        }
+                    }
+            #pragma endregion
                 }
-
-                if (event.custom_id == button.get_button_id().second && event.command.usr.id == button.get_user()) // clicked no
-                {
-                    event.reply(dpp::ir_update_message,  "You clicked: no", [&event](auto v)
-                    {
-                        std::cout << "thinking done!" << "\n";
-                    });
-                }    
-                pop_one_from_queue(); // flush
             }
+        //
 
+
+        //        if (!event.command.usr.id == itr->second.get_user().second)
+        //        {
+        //            event.reply(dpp::ir_channel_message_with_source, "Hey you cant click that!");
+        //        }
+        //        for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++)
+        //        {
+
+        //        
+        //            if (!event.command.usr.id == itr->second.get_user().second)
+        //            {
+        //                event.reply(dpp::ir_channel_message_with_source, "Hey you cant click that!");
+        //            }
+
+        //        }
+        //    }
+
+
+        //    ttt::confirm_button button = get_one_from_queue(); // get 
+        //    /*
+        //    event.thinking([&event](auto v) 
+        //    {
+        //        std::cout << "thinking done!"<< "\n";
+        //    });
+        //    */
+
+        //    if (!event.command.usr.id == button.get_user().second)
+        //    {
+        //        event.reply(dpp::ir_channel_message_with_source, "Hey you cant click that!");
+        //    }
+
+        //    while (!global_queue.empty() && event.command.usr.id == button.get_user().second)
+        //    {
+        //        
+
+        //        std::cout << "event id: " << event.custom_id << "\n";
+        //        std::cout << "button id: " << button.get_button_id().first << "\n";
+        //        std::cout << "user id: " << event.command.usr.id << "\n";
+        //        std::cout << "clicker id: " << button.get_user().second << "\n";
+
+        //        if (event.custom_id == button.get_button_id().first && event.command.usr.id == button.get_user().second) // clicked yes
+        //        {
+        //            dpp::embed new_embed;
+        //            new_embed.set_description("+1");
+        //            message.add_embed(new_embed);
+
+        //            event.reply(dpp::ir_update_message, "You clicked: Yes", [&event](auto v)
+        //            {
+        //                std::cout << "thinking done!" << "\n";
+        //            });
+        //            
+        //            
+        //        }
+
+        //        if (event.custom_id == button.get_button_id().second && event.command.usr.id == button.get_user().second) // clicked no
+        //        {
+        //            event.reply(dpp::ir_update_message,  "You clicked: no", [&event](auto v)
+        //            {
+        //                std::cout << "thinking done!" << "\n";
+        //            });
+        //        }    
+        //        pop_one_from_queue(); // flush
             
+
+        //    
 
         }
     );
