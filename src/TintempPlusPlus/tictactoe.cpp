@@ -19,17 +19,8 @@ void ttt::init()
     init_uid((*new UniqueID).id);
 }
 
-
-
 #pragma region Confirm button 
 // a confiem button to challenge player 2
-
-
-std::pair<std::string, std::string> ttt::confirm_button::get_button_id()
-{
-    return this->btn_id;
-}
-
 void ttt::confirm_button::init(const dpp::snowflake player_1, const dpp::snowflake player_2, int uid_y, int uid_n)
 {
 	this->id.first = uid_y;
@@ -37,7 +28,29 @@ void ttt::confirm_button::init(const dpp::snowflake player_1, const dpp::snowfla
     this->player_1 = player_1;
     this->player_2 = player_2;
     set_btn_id(this->id);
+
+    this->on_button_confirm
+        .add_component(
+            dpp::component()
+            .set_label("Confirmed")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_disabled(true)
+            .set_id("no_interaction_" + uid_y)
+        ).add_component(
+            dpp::component()
+            .set_label("Confirmed")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_disabled(true)
+            .set_id("no_interaction_" + uid_n)
+        );
 } 
+
+std::pair<std::string, std::string> ttt::confirm_button::get_button_id()
+{
+    return this->btn_id;
+}
 
 const std::pair<dpp::snowflake, dpp::snowflake> const ttt::confirm_button::get_user(){
     return std::make_pair(this->player_1, this->player_2);

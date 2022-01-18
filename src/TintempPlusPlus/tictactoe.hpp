@@ -19,6 +19,7 @@ private:
     void init_uid(int &uid) { this->uid = uid; };
     void init();
 public:
+    bool have_origin = false;
     struct confirm_button
     {
     private:
@@ -32,6 +33,7 @@ public:
         void init(const dpp::snowflake player_1, const dpp::snowflake player_2, int uid_y, int uid_n);
     public:
         dpp::component component;
+        dpp::component on_button_confirm;
         struct stat {
             bool is_player_1_confm = false;
             bool is_player_2_confm = false;
@@ -64,7 +66,7 @@ public:
     const int& get_uid() const { return this->uid; }
 
 	// --- Modifiers ---
-	void set_origin(dpp::message origin_message) { this->origin = origin_message; }
+    void set_origin(dpp::message origin_message) { this->origin = origin_message; this->have_origin = true; }
     void set_origin_embed(dpp::embed &new_embed) { this->origin.embeds.front() = new_embed; }
 
 	// --- Functions ---

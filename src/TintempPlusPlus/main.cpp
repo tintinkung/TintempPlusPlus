@@ -28,6 +28,15 @@ void ping(dpp::cluster &bot, dpp::message_create_t &message);
 void on_deploy_button(dpp::cluster& bot, dpp::message &message, dpp::embed embed);
 void on_confirm_click(dpp::cluster& bot, dpp::message &message);
 
+static enum Colors {
+    AQUA = 0x00FFFF,
+    BLACK = 0x000000,
+    WHITE = 0xFFFFFF,
+    YELLOW = 0xFFFF00,
+    RED = 0xFF0000,
+    GREEN = 0x00FF00,
+    BLUE = 0x0000FF,
+};
 
 int main()
 {
@@ -129,7 +138,31 @@ void erase_one_from_list(std::list<std::pair<ttt, ttt::confirm_button>>::iterato
 }
 
 
+void set_origin(dpp::message deployed_msg, int id)
+{
+    try
+    {
+        if (!ttt_list_g.empty())
+        {
+            for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++) // iterate thru our saved list
+            {
+                if (id == itr->first.get_uid())
+                {
+                    // we found the itrerator to put message in!
+                    if (!itr->first.have_origin)
+                    {
+                        itr->first.set_origin(deployed_msg);
+                        std::cout << "registered ttt message origin: " << itr->first.get_origin().id << " to ttt id: " << itr->first.get_uid() << "\n";
+                    }
 
+                }
+            }
+        }
+    }
+    catch (const std::out_of_range& e) {
+        std::cout << "Error setting message origin: " << e.what() << "\n";
+    }
+}
 
 void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
 {   
@@ -157,9 +190,10 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
          │  └─ 2nd: ttt::confirm button struct
          │     *confirm player is playing the game or not.
         */
-        auto ttt_opt = push_onto_list(message.msg.author.id, mention[0].first.id);
-
-        std::cout << "init new ttt id: "  << ttt_opt.first.get_uid()        << "\n";
+        auto ttt_opt = push_onto_list(message.msg.author.id, mention[0].first.id);  
+        /* keep alive the id using uniqur_ptr and waits for callback */
+        auto id = std::make_unique<int>(ttt_opt.first.get_uid());
+        std::cout << "init new ttt id: "  << *id.get() << "\n";
         std::cout << "ttt: player 1: " << ttt_opt.first.get_player().first  << "\n";
         std::cout << "ttt: player 2: " << ttt_opt.first.get_player().second << "\n";
 
@@ -169,15 +203,7 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
         author.name = message.msg.author.username;
         std::stringstream msg; msg << "hey <@" << ttt_opt.first.get_player().second << ">, <@" << ttt_opt.first.get_player().first << "> want to play tic-tac-toe with you";
 
-        enum Colors {
-            AQUA = 0x00FFFF,
-            BLACK = 0x000000,
-            WHITE = 0xFFFFFF,
-            YELLOW = 0xFFFF00,
-            RED = 0xFF0000,
-            GREEN = 0x00FF00,
-            BLUE = 0x0000FF,
-        };
+
         confirm_embed.set_title("Hey :right_facing_fist:").set_description(msg.str()).set_author(author).set_color(YELLOW); // rgb(255, 255, 102)
 
 
@@ -218,15 +244,17 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
             );
 #pragma endregion
 
+
         bot.message_create(dpp::message(message.msg.channel_id, confirm_embed)
             .add_component(ttt_opt.second.component)
-            , ([&](const dpp::confirmation_callback_t& callback) // catch error from callback
+            , ([&, id = *id.get()/* pull out id from uniqueptr */](const dpp::confirmation_callback_t& callback) // catch error from callback
                 {
                     if (!callback.is_error())
                     {       
                         bot.log(dpp::ll_info, "command exit: succeed");
                         auto deployed_msg = std::get<dpp::message>(callback.value);
 
+                        set_origin(deployed_msg, id);
                         on_confirm_click(bot, deployed_msg);
 
                     }
@@ -436,45 +464,21 @@ void on_confirm_click(dpp::cluster& bot, dpp::message &message)
 
     bot.on_button_click([&, message](const dpp::button_click_t& event)
         {
-            /* setup interaction-finish button */
-            dpp::component confirmed_button;
-            confirmed_button
-                .add_component(
-                    dpp::component()
-                    .set_label("Confirmed")
-                    .set_type(dpp::cot_button)
-                    .set_style(dpp::cos_secondary)
-                    .set_disabled(true)
-                )
-                .add_component(
-                    dpp::component()
-                    .set_label("Confirmed")
-                    .set_type(dpp::cot_button)
-                    .set_style(dpp::cos_secondary)
-                    .set_disabled(true)
-                );
 
             // fetch out global ttt storage
             if (!ttt_list_g.empty())
             {
                 for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++) // iterate thru our saved list
                 {
-#pragma region ANSWERED_YES
+            #pragma region ANSWERED_YES
+                    /*[TODO]: filter event if event is ended
+                     * 
+                     */
                     if (event.custom_id == itr->second.get_button_id().first)
                     {
-                        // we found the itrerator to put message in!
-                        try
-                        {
-                            itr->first.set_origin(message);
-                            std::cout << "registered ttt message: " << itr->first.get_origin().id << "\n";
-                        }
-                        catch (const std::exception& e) {
-                            std::cout << "Error: " << e.what() << "\n";
-                        }
-
                         dpp::embed start_embed;
                         std::stringstream msg; msg << "<@" << itr->first.get_player().first << "> ***vs*** <@" << itr->first.get_player().second << ">";
-                        start_embed.set_title("Game Started!").set_description(msg.str()).set_color(0x00FF00);
+                        start_embed.set_title("Game Started!").set_description(msg.str()).set_color(GREEN);
                         itr->first.set_origin_embed(start_embed);
 
                         if (event.command.usr.id == itr->second.get_user().first)
@@ -513,20 +517,19 @@ void on_confirm_click(dpp::cluster& bot, dpp::message &message)
                             /*  both player is confirmed -> send tictactoe game!  */
                             if (itr->second.st.is_player_2_confm)
                             {
-                                bot.message_edit(itr->first.get_origin().add_component(confirmed_button)
-                                    , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
-                                {
-
-                                    if (callback.is_error())
+                                bot.message_edit(itr->first.get_origin().add_component(itr->second.on_button_confirm)
+                                , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
                                     {
-                                        std::cout << "edit message error: " << callback.get_error().message << "\n";
-                                        for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                        if (callback.is_error())
+                                        {
+                                            std::cout << "edit message error: " << callback.get_error().message << "\n";
+                                            for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                        }
+                                        else
+                                        {
+                                            bot.log(dpp::ll_info, "origin message edit: succeed");
+                                        }
                                     }
-                                    else
-                                    {
-                                        bot.log(dpp::ll_info, "command exit: succeed");
-                                    }
-                                }
                                 );
 
                                 event.reply(dpp::ir_channel_message_with_source, "...", [event, itr](dpp::confirmation_callback_t callback)
@@ -673,11 +676,8 @@ void on_confirm_click(dpp::cluster& bot, dpp::message &message)
                             /*  both player is confirmed -> send tictactoe game!  */
                             if (itr->second.st.is_player_1_confm)
                             {
-                                //dpp::embed start_embed;
-                                //std::stringstream msg; msg << "<@" << itr->first.get_player().first << "> ***vs*** <@" << itr->first.get_player().second << ">";
-                                //start_embed.set_title("Game Started!").set_description(msg.str())/*.set_color(0x00FF00)*/;
 
-                                bot.message_edit(itr->first.get_origin().add_component(confirmed_button)
+                                bot.message_edit(itr->first.get_origin().add_component(itr->second.on_button_confirm)
                                     , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
                                 {
                                     
@@ -688,7 +688,7 @@ void on_confirm_click(dpp::cluster& bot, dpp::message &message)
                                     }
                                     else
                                     {
-                                        bot.log(dpp::ll_info, "command exit: succeed");
+                                        bot.log(dpp::ll_info, "origin message edit: succeed");
                                     }
                                         
                                 }
