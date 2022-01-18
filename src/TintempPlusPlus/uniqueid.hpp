@@ -1,6 +1,5 @@
 #ifndef UID_HPP
 #define UID_HPP
-#include <iostream>
 
 /**@brief Unique ID generator, will counts from 1 - n by application life time.
  * source: https://www.oreilly.com/library/view/c-cookbook/0596007612/ch08s09.html

@@ -1,15 +1,12 @@
-#ifndef TICTACTOE_HPP
-#define TICTACTOE_HPP
+#pragma once
 
-#include <dpp/dpp.h>
-#include <sstream>
-
-
-
+/* * tic-tac-toe game manager class
+ * manages ttt game command and everything.
+ */
 class ttt
 {
 private:
-	// origin message id of this ttt
+	/* origin message id of this ttt */ 
 	dpp::message origin;  
 
     int uid;
@@ -41,8 +38,8 @@ public:
             bool cancelled = false;
         }; stat st;
        
-        const std::pair<dpp::snowflake, dpp::snowflake> const get_user();
-        const std::pair<int, int> const get_id();
+        const std::pair<dpp::snowflake, dpp::snowflake> get_user();
+        const std::pair<int, int> get_id();
         std::pair<std::string, std::string> get_button_id();
         dpp::message get_replied_msg() { return this->replied_msg; }
 
@@ -70,9 +67,38 @@ public:
     void set_origin_embed(dpp::embed &new_embed) { this->origin.embeds.front() = new_embed; }
 
 	// --- Functions ---
-	
     
+
 };
 
 
-#endif
+// ===== tictactoe global queue cataching  ======
+
+/* * push new tic-tac-toe game operation to global list and local data for usage.
+ *
+ * @param player_1 : the first player challenging ttt game (this should be user that call the command)
+ * @param player_2 : second player playing with player 1 (this should be mentioned player by player_1's command)
+ * 
+ * @return results of operation as std::pair<ttt, ttt::confirm_button>, can be used locally 
+ */
+std::pair<ttt, ttt::confirm_button> push_onto_list(const dpp::snowflake player_1, const dpp::snowflake player_2);
+
+/* * erase 1 data from the ttt global list. (occured when 1 of the ttt command is done)
+ * @param i the iterator of `ttt_list_g` list
+ */
+void erase_one_from_list(std::list<std::pair<ttt, ttt::confirm_button>>::iterator i);
+
+/* * search for ttt class by unique id and set its message origin.
+ * (since message origin is deployed by bot.message_create callback, 
+ * this command for assigning callback message from local scope out to the global list)
+ *
+ * @param deployed_msg : deployed message wanted to assign to this ttt id
+ * @param id : unique id of ttt class to search for
+ */
+void set_origin(dpp::message deployed_msg, int id);
+
+/* * event when player clicked the confirm button sent 
+ * this event response with confirm message by player's interaction 
+ * and reach out to deploying actual tic-tac-toe game
+ */
+void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event);
