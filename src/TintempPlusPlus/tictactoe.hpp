@@ -71,16 +71,11 @@ public:
         const std::string get_id() const { return this->id; }
         // constructor
         pair(std::string pos);
+        pair() = default; // make it default
     };
-    std::array<std::array<pair, 3>, 3> board = {
-        {   /*column*/
-    /*row*/ { *new pair("000"), *new pair("001"), *new pair("002") },
 
-            { *new pair("100"), *new pair("101"), *new pair("102") },
+    std::array<std::array<pair, 3>, 3> board;
 
-            { *new pair("200"), *new pair("201"), *new pair("202") },
-        }
-    };
 
 	// --- Constructors ---
     ttt(const dpp::snowflake player_1, const dpp::snowflake player_2);

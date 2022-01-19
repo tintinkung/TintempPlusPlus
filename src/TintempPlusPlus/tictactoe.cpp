@@ -25,6 +25,15 @@ void ttt::init()
 
 void ttt::init_game()
 {
+    this->board = {
+       {   /*column*/
+    /*row*/ { *new pair("000"), *new pair("001"), *new pair("002") },
+
+            { *new pair("100"), *new pair("101"), *new pair("102") },
+
+            { *new pair("200"), *new pair("201"), *new pair("202") },
+        }
+    };
 
     dpp::component row_1, row_2, row_3;
 #pragma region components_row

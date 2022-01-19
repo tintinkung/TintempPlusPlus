@@ -21,18 +21,25 @@ int main()
 {
 /* login */
     dpp::cluster bot(TOKEN);
-    try {
-        // Be sure to place your token in the line below, and uncomment the line
-        // Follow steps here to get a token: https://dpp.dev/creating-a-bot-application.html
+    try 
+    {
         bot.on_ready([&bot](const dpp::ready_t& event) {
             bot.log(dpp::ll_info, "Logged in as " + bot.me.username);
         });
-
         
         bot.on_log([](const dpp::log_t& event) {
-           // if (event.severity > dpp::ll_trace) {
-                logger::log(event.severity, event.message);
-           // }
+           if (event.severity >= logger::config.log_level) 
+           {
+               try
+               {
+                    logger::log(event.severity, event.message);
+               }
+               catch (const std::exception& e)
+               {    /* just in case, use standard std::cout logging if the logger somehow fail */
+                   std::cout << dpp::utility::current_date_time() << " [" << dpp::utility::loglevel(event.severity) << "]: " << event.message << "\n";
+               }
+
+           }
         });
          
     }

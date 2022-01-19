@@ -21,11 +21,19 @@ namespace logger
 	/* log level enum, specify level of logging */
 	enum level { ll_comment, ll_trace, ll_info, ll_debug, ll_error, ll_warning, ll_critical };
 
+	/* default log level for global console logging */
+	struct config_t {
+		int log_level = ll_comment; 
+		bool show_date = true;
+	}; 
+	static config_t config;
+
+
 	/* @brief log by level,
 	 * [LEVEL]: message
 	 * @param level : level by enum, support built in dpp::loglevel and util::logger::level
 	 */
-	void log(level level, std::string message);
+	void log(logger::level level, std::string message);
 	void log(dpp::loglevel level, std::string message);
 
 	/* @brief log with info label, 
