@@ -7,8 +7,7 @@
 
 #pragma region ttt class
 
-ttt::ttt(const dpp::snowflake player_1, const dpp::snowflake player_2)
-{
+ttt::ttt(const dpp::snowflake player_1, const dpp::snowflake player_2) {
     this->player_1 = player_1;
     this->player_2 = player_2;
 	init();
@@ -23,6 +22,92 @@ void ttt::init()
 {
     init_uid((*new UniqueID).id);
 }
+
+void ttt::init_game()
+{
+
+    dpp::component row_1, row_2, row_3;
+#pragma region components_row
+        row_1.add_component(
+            dpp::component()
+            .set_label("0 0")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[0][0].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("0 1")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[0][1].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("0 2")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[0][2].get_id())
+        );
+        row_2.add_component(
+            dpp::component()
+            .set_label("1 0")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[1][0].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("1 1")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[1][1].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("1 2")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[1][2].get_id())
+        );
+        row_3.add_component(
+            dpp::component()
+            .set_label("2 0")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[2][0].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("2 1")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[2][1].get_id())
+        ).add_component(
+            dpp::component()
+            .set_label("2 2")
+            .set_type(dpp::cot_button)
+            .set_style(dpp::cos_secondary)
+            .set_id(board[2][2].get_id())
+        );
+#pragma endregion components_row
+
+    if (this->have_game)
+    {
+        this->game.set_content("uwu")
+            .add_component(row_1)
+            .add_component(row_2)
+            .add_component(row_3);
+    }
+
+}
+
+void ttt::pair::init(std::string& pos)
+{
+    this->id = fmt::format("p_{}_{}", pos, (*new UniqueID).id);
+
+}
+
+ttt::pair::pair(std::string pos)
+{
+    this->init(pos);
+}
+
 
 #pragma region ttt::confirm_button
 // a confiem button to challenge player 2
@@ -121,7 +206,7 @@ void set_origin(dpp::message deployed_msg, int id)
                     if (!itr->first.have_origin)
                     {
                         itr->first.set_origin(deployed_msg);
-                        std::cout << "registered ttt message origin: " << itr->first.get_origin().id << " to ttt id: " << itr->first.get_uid() << "\n";
+                        logger::comment(fmt::format("registered ttt message origin: {} to ttt id: {}", itr->first.get_origin().id, itr->first.get_uid()));
                     }
 
                 }
@@ -129,7 +214,7 @@ void set_origin(dpp::message deployed_msg, int id)
         }
     }
     catch (const std::out_of_range& e) {
-        std::cout << "Error setting message origin: " << e.what() << "\n";
+        logger::error(fmt::format("Error setting message origin: {}", e.what()));
     }
 }
 
@@ -138,7 +223,7 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
     // fetch out global ttt storage
     if (!ttt_list_g.empty())
     {
-        std::cout << "entered on_confirm_click" << "\n";
+        logger::comment("entered on_confirm_click()");
         for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++) // iterate thru our saved list
         {
             /* setup */
@@ -171,13 +256,13 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
                                 if (!callback.is_error())
                                 {   // store replied message in or global list
                                     itr->second.set_replied_msg(std::get<dpp::message>(callback.value));
-                                    std::cout << "get response success!" << "\n";
+                                    logger::comment("successfull get_original_response()!");
                                     itr->second.st.replied = true;
                                 }
                                 else
                                 {
-                                    std::cout << "get response message error: " << callback.get_error().message << "\n";
-                                    for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                    logger::error("error on get_original_response(): ");
+                                    for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
                                 }
 
 
@@ -200,28 +285,65 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
                         {
                             if (!callback.is_error())
                             {
-                                bot.log(dpp::ll_info, "origin message edit: succeed");
-
+                                bot.log(dpp::ll_trace, "successfull bot.message_edit()");
                             }
                             else
                             {
-                                std::cout << "edit message error: " << callback.get_error().message << "\n";
-                                for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                bot.log(dpp::ll_error, "error on bot.message_edit(): " + callback.get_error().message);
+                                for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
                             }
                         }
                     );
-
-                    event.reply(dpp::ir_channel_message_with_source, "...", [event, itr](dpp::confirmation_callback_t callback)
+                    /* delete earlier waiting message */
+                    bot.message_delete(itr->second.get_replied_msg().id, itr->second.get_replied_msg().channel_id);
+                    /* reply thinking and finally deploy the game */
+                    event.reply(dpp::ir_channel_message_with_source, "lessgo"
+                        , [&bot, event, itr](dpp::confirmation_callback_t callback)
                         {
                             if (!callback.is_error())
                             {
-                                std::cout << "get response success!" << "\n";
+                                logger::comment("successfull event.reply()!");
                                 itr->second.st.replied = true;
+
+                                event.get_original_response([&bot, itr](dpp::confirmation_callback_t callback)
+                                    {
+                                        if (!callback.is_error())
+                                        {   // init actual tic-tac-toe game
+                                            itr->first.set_game_origin(std::get<dpp::message>(callback.value));
+                                            itr->first.init_game();
+
+                                            logger::comment("successfull get_original_response()!");
+                                            itr->second.st.replied = true;
+
+                                        /* get game and edit it then deploy */
+                                            bot.message_edit(itr->first.get_game()
+                                                , [&bot](const dpp::confirmation_callback_t& callback) // catch error from callback
+                                                {
+                                                    if (!callback.is_error())
+                                                    {
+                                                        bot.log(dpp::ll_info, "ttt game initialize: succeed");
+                                                    }
+                                                    else
+                                                    {
+                                                        bot.log(dpp::ll_error, "error on get_original_response(): " + callback.get_error().message);
+                                                        for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
+                                                    }
+                                                }
+                                            );
+
+                                        }
+                                        else
+                                        {
+                                            bot.log(dpp::ll_error, "error on bot.message_edit(): " + callback.get_error().message);
+                                            for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
+                                        }
+                                    }
+                                );
                             }
                             else
                             {
-                                std::cout << "get response message error: " << callback.get_error().message << "\n";
-                                for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                                bot.log(dpp::ll_error, "error on event.reply(): " + callback.get_error().message);
+                                for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
                             }
                         }
                     );
@@ -251,11 +373,11 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
                 , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
                     {
                         if (!callback.is_error()) {
-                            bot.log(dpp::ll_info, "origin message edit: succeed");
+                            bot.log(dpp::ll_trace, "succesfully bot.message_edit()!");
                         }
                         else {
-                            std::cout << "edit message error: " << callback.get_error().message << "\n";
-                            for (auto i : callback.get_error().errors) { std::cout << i.reason << "\n"; }
+                            bot.log(dpp::ll_error, "error on bot.message_edit(): " + callback.get_error().message);
+                            for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
                         }
                     }
                 );
@@ -270,4 +392,9 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
     }
         
     
+}
+
+void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event)
+{
+
 }

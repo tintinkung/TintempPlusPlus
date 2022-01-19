@@ -8,6 +8,7 @@ class ttt
 private:
 	/* origin message id of this ttt */ 
 	dpp::message origin;  
+    dpp::message game;
 
     int uid;
     dpp::snowflake player_1;
@@ -17,6 +18,8 @@ private:
     void init();
 public:
     bool have_origin = false;
+    bool have_game = false;
+
     struct confirm_button
     {
     private:
@@ -31,12 +34,12 @@ public:
     public:
         dpp::component component;
         dpp::component on_button_confirm;
-        struct stat {
+        struct status {
             bool is_player_1_confm = false;
             bool is_player_2_confm = false;
             bool replied = false;
             bool cancelled = false;
-        }; stat st;
+        }; status st;
        
         const std::pair<dpp::snowflake, dpp::snowflake> get_user();
         const std::pair<int, int> get_id();
@@ -51,6 +54,34 @@ public:
         confirm_button(const dpp::snowflake player_1, const dpp::snowflake player_2);
     };
 
+    struct pair 
+    {
+    private:
+        std::string id;
+
+        void init(std::string& pos);
+    public:
+
+        struct status {
+            bool X = false;
+            bool O = false;
+            bool IDLE = true;
+        }; status st;
+
+        const std::string get_id() const { return this->id; }
+        // constructor
+        pair(std::string pos);
+    };
+    std::array<std::array<pair, 3>, 3> board = {
+        {   /*column*/
+    /*row*/ { *new pair("000"), *new pair("001"), *new pair("002") },
+
+            { *new pair("100"), *new pair("101"), *new pair("102") },
+
+            { *new pair("200"), *new pair("201"), *new pair("202") },
+        }
+    };
+
 	// --- Constructors ---
     ttt(const dpp::snowflake player_1, const dpp::snowflake player_2);
 
@@ -59,16 +90,18 @@ public:
 
 	// --- Accessors ---
 	dpp::message& get_origin() { return this->origin;  }
+    dpp::message& get_game() { return this->game; }
     const std::pair<dpp::snowflake, dpp::snowflake> get_player() const { return std::make_pair(this->player_1, this->player_2); }
     const int& get_uid() const { return this->uid; }
 
 	// --- Modifiers ---
     void set_origin(dpp::message origin_message) { this->origin = origin_message; this->have_origin = true; }
     void set_origin_embed(dpp::embed &new_embed) { this->origin.embeds.front() = new_embed; }
+    void set_game_origin(dpp::message origin_message) { this->game = origin_message; this->have_game = true; }
+
 
 	// --- Functions ---
-    
-
+    void init_game();
 };
 
 
@@ -102,3 +135,5 @@ void set_origin(dpp::message deployed_msg, int id);
  * and reach out to deploying actual tic-tac-toe game
  */
 void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event);
+
+void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event);

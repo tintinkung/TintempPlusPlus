@@ -15,8 +15,6 @@ void newCommand(std::string command_name, dpp::cluster& bot, dpp::message_create
 void tictactoe(dpp::cluster& bot, dpp::message_create_t& message);
 void ping(dpp::cluster &bot, dpp::message_create_t &message);
 
-void on_deploy_button(dpp::cluster& bot, dpp::message &message, dpp::embed embed);
-
 #pragma endregion
 
 int main()
@@ -32,9 +30,9 @@ int main()
 
         
         bot.on_log([](const dpp::log_t& event) {
-            if (event.severity > dpp::ll_trace) {
-                std::cout << dpp::utility::loglevel(event.severity) << ": " << event.message << "\n";
-            }
+           // if (event.severity > dpp::ll_trace) {
+                logger::log(event.severity, event.message);
+           // }
         });
          
     }
@@ -66,7 +64,10 @@ void initButtons(dpp::cluster& bot)
         {
             bot.log(dpp::ll_info, fmt::format("user <@{}> pressed the button [{}]", event.command.usr.id, event.custom_id));
 
+            /* list all button interaction here */
             on_confirm_click(bot, event);
+
+            on_ttt_interaction(bot, event);
 
         }
     );
@@ -116,9 +117,9 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
         /* keep alive the id using uniqur_ptr and waits for callback */
         auto id = std::make_unique<int>(ttt_opt.first.get_uid());
 
-        bot.log(dpp::ll_info, fmt::format("init new ttt id: {}", *id.get()));
-        bot.log(dpp::ll_info, fmt::format("ttt: player 1:  {}", ttt_opt.first.get_player().first));
-        bot.log(dpp::ll_info, fmt::format("ttt: player 2: {}", ttt_opt.first.get_player().second));
+        bot.log(dpp::ll_trace, fmt::format("init new ttt id: {}", *id.get()));
+        bot.log(dpp::ll_trace, fmt::format("ttt: player 1:  {}", ttt_opt.first.get_player().first));
+        bot.log(dpp::ll_trace, fmt::format("ttt: player 2: {}", ttt_opt.first.get_player().second));
 
 
         /* create an embed */
@@ -151,14 +152,14 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
                 {
                     if (!callback.is_error())
                     {       
-                        bot.log(dpp::ll_info, "command exit: succeed");
+                        bot.log(dpp::ll_trace, "command exit: succeed");
                         auto deployed_msg = std::get<dpp::message>(callback.value);
 
                         set_origin(deployed_msg, id);
                     }
                     else
                     {
-                        bot.log(dpp::ll_warning, "command exit: " + callback.get_error().message);
+                        bot.log(dpp::ll_error, "command exit: " + callback.get_error().message);
                     }
                 }
             )
@@ -308,136 +309,6 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
 }
 
 #pragma endregion
-
-
-
-void on_deploy_button(dpp::cluster &bot, dpp::message &message, dpp::embed embed)
-{
-    std::cout << "entered deployment with message: " << message.id << "\n";
-
-    bot.on_button_click([&](const dpp::button_click_t& event) {
-        /* Button clicks are still interactions, and must be replied to in some form to
-         * prevent the "this interaction has failed" message from Discord to the user.
-         */
-        std::cout << "clicked button from message id: " << message.id << "\n";
-        // event.reply(dpp::ir_channel_message_with_source, "You clicked: `" + event.custom_id + "`");
-
-        dpp::component row_1, row_2, row_3;
-#pragma region components_row
-        row_1.add_component(
-            dpp::component()
-            .set_label("0 01")
-            .set_type(dpp::cot_button)
-            //.set_emoji(u8"🗿")
-            .set_style(dpp::cos_secondary)
-            .set_id("1")
-        )
-            .add_component(
-                dpp::component()
-                .set_label("0 11")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"🧻")
-                .set_style(dpp::cos_success)
-                .set_id("2")
-            )
-            .add_component(
-                dpp::component()
-                .set_label("0 21")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"⚔")
-                .set_style(dpp::cos_primary)
-                .set_id("3")
-            );
-        row_2.add_component(
-            dpp::component()
-            .set_label("1 0")
-            .set_type(dpp::cot_button)
-            //.set_emoji(u8"🗿")
-            .set_style(dpp::cos_secondary)
-            .set_id("4")
-        )
-            .add_component(
-                dpp::component()
-                .set_label("1 1")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"🧻")
-                .set_style(dpp::cos_success)
-                .set_id("5")
-            )
-            .add_component(
-                dpp::component()
-                .set_label("1 2")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"⚔")
-                .set_style(dpp::cos_primary)
-                .set_id("6")
-            );
-        row_3.add_component(
-            dpp::component()
-            .set_label("2 0")
-            .set_type(dpp::cot_button)
-            //.set_emoji(u8"🗿")
-            .set_style(dpp::cos_secondary)
-            .set_id("7")
-        )
-            .add_component(
-                dpp::component()
-                .set_label("2 1")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"🧻")
-                .set_style(dpp::cos_success)
-                .set_id("8")
-            )
-            .add_component(
-                dpp::component()
-                .set_label("2 2")
-                .set_type(dpp::cot_button)
-                //.set_emoji(u8"⚔")
-                .set_style(dpp::cos_primary)
-                .set_id("9")
-            );
-#pragma endregion components_row
-
-
-        dpp::embed ping_embed;
-        ping_embed.set_title("yay!");
-        message.add_embed(ping_embed);
-
-        event.thinking([&bot, &event](const dpp::confirmation_callback_t& callback) 
-        {
-            if (!callback.is_error())
-            {
-                auto confirmation = std::get<dpp::confirmation>(callback.value); //get message object from a callback.value
-
-                
-            }
-            else
-            {
-                bot.log(dpp::ll_warning, "command exit: " + callback.get_error().message);
-            }
-        });
-
-
-  
-
-        bot.message_edit(message.add_component(row_1).add_component(row_2).add_component(row_3)
-            , [&bot, &event](const dpp::confirmation_callback_t& callback) // catch error from callback
-            {
-
-                if (callback.is_error())
-                    bot.log(dpp::ll_warning, "command exit: " + callback.get_error().message); 
-                else
-                    bot.log(dpp::ll_info, "command exit: succeed"); 
-            }
-        );
-
-        // bot.message_edit()
-
-        std::cout << event.raw_event << "\n";
-
-        }
-    );
-}
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu

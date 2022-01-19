@@ -2,6 +2,7 @@
 /* d++ library */
 #include <dpp/dpp.h>
 #include <dpp/fmt/format.h>
+#include <dpp/fmt/color.h>
 
 /*** standard c++ include */
 #include <iostream>
@@ -17,3 +18,4 @@
 
 #include <list>
 #include <algorithm>
+#include <array>
