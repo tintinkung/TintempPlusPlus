@@ -3,7 +3,7 @@
 
 #include "./uniqueid.hpp"
 #include "./utility.h"
-
+std::tuple<dpp::component, dpp::component, dpp::component> fetch_ttt_components(std::array<std::array<ttt::pair, 3>, 3> board);
 
 #pragma region ttt class
 
@@ -25,6 +25,10 @@ void ttt::init()
 
 void ttt::init_game()
 {
+    /* init turns */
+    this->turn.first = this->player_1; /*[TODO]: make it random people first turn */
+    this->turn.second = ttt::pair::X;
+
     this->board = {
        {   /*column*/
     /*row*/ { *new pair("000"), *new pair("001"), *new pair("002") },
@@ -35,81 +39,28 @@ void ttt::init_game()
         }
     };
 
-    dpp::component row_1, row_2, row_3;
-#pragma region components_row
-        row_1.add_component(
-            dpp::component()
-            .set_label("0 0")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[0][0].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("0 1")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[0][1].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("0 2")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[0][2].get_id())
-        );
-        row_2.add_component(
-            dpp::component()
-            .set_label("1 0")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[1][0].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("1 1")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[1][1].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("1 2")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[1][2].get_id())
-        );
-        row_3.add_component(
-            dpp::component()
-            .set_label("2 0")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[2][0].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("2 1")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[2][1].get_id())
-        ).add_component(
-            dpp::component()
-            .set_label("2 2")
-            .set_type(dpp::cot_button)
-            .set_style(dpp::cos_secondary)
-            .set_id(board[2][2].get_id())
-        );
-#pragma endregion components_row
 
-    if (this->have_game)
-    {
-        this->game.set_content("uwu")
-            .add_component(row_1)
-            .add_component(row_2)
-            .add_component(row_3);
-    }
+    auto board_component = fetch_ttt_components(this->board);
+
+        this->game 
+            .set_allowed_mentions(false, false, false, false, { this->player_1 , this->player_2 }, {}) // only mention our player
+            .set_content(fmt::format("its <@{}>'s turn", this->turn.first))
+            .add_component(std::get<0>(board_component))
+            .add_component(std::get<1>(board_component))
+            .add_component(std::get<2>(board_component));
+
 
 }
 
 void ttt::pair::init(std::string& pos)
 {
     this->id = fmt::format("p_{}_{}", pos, (*new UniqueID).id);
+}
 
+void ttt::swap_turn()
+{
+    (this->turn.first == player_1) ? this->turn.first = player_2 : this->turn.first = player_1;
+    (this->turn.second == ttt::pair::X) ? this->turn.second = ttt::pair::O : this->turn.second = ttt::pair::X;
 }
 
 ttt::pair::pair(std::string pos)
@@ -227,6 +178,86 @@ void set_origin(dpp::message deployed_msg, int id)
     }
 }
 
+std::pair<std::string, dpp::component_style> fetch_btn_icon(int status)
+{
+    switch (status)
+    {
+    case 0:
+        return std::make_pair("-", dpp::cos_secondary);
+    case 1:
+        return std::make_pair("X", dpp::cos_danger);
+    case 2:
+        return std::make_pair("O", dpp::cos_primary);
+    }
+}
+
+
+std::tuple<dpp::component, dpp::component, dpp::component> fetch_ttt_components(std::array<std::array<ttt::pair, 3>, 3> board)
+{
+    dpp::component row_1, row_2, row_3;
+#pragma region components_row
+    row_1.add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[0][0].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[0][0].status).second)
+        .set_id(board[0][0].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[0][1].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[0][1].status).second)
+        .set_id(board[0][1].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[0][2].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[0][2].status).second)
+        .set_id(board[0][2].get_id())
+    );
+    row_2.add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[1][0].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[1][0].status).second)
+        .set_id(board[1][0].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[1][1].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[1][1].status).second)
+        .set_id(board[1][1].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[1][2].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[1][2].status).second)
+        .set_id(board[1][2].get_id())
+    );
+    row_3.add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[2][0].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[2][0].status).second)
+        .set_id(board[2][0].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[2][1].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[2][1].status).second)
+        .set_id(board[2][1].get_id())
+    ).add_component(
+        dpp::component()
+        .set_label(fetch_btn_icon(board[2][2].status).first)
+        .set_type(dpp::cot_button)
+        .set_style(fetch_btn_icon(board[2][2].status).second)
+        .set_id(board[2][2].get_id())
+    );
+#pragma endregion components_row
+
+    return std::make_tuple(row_1, row_2, row_3);
+}
+
 void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
 {
     // fetch out global ttt storage
@@ -305,15 +336,13 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
                     );
                     /* delete earlier waiting message */
                     bot.message_delete(itr->second.get_replied_msg().id, itr->second.get_replied_msg().channel_id);
+
                     /* reply thinking and finally deploy the game */
                     event.reply(dpp::ir_channel_message_with_source, "lessgo"
                         , [&bot, event, itr](dpp::confirmation_callback_t callback)
                         {
                             if (!callback.is_error())
                             {
-                                logger::comment("successfull event.reply()!");
-                                itr->second.st.replied = true;
-
                                 event.get_original_response([&bot, itr](dpp::confirmation_callback_t callback)
                                     {
                                         if (!callback.is_error())
@@ -326,11 +355,12 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
 
                                         /* get game and edit it then deploy */
                                             bot.message_edit(itr->first.get_game()
-                                                , [&bot](const dpp::confirmation_callback_t& callback) // catch error from callback
+                                                , [&bot, itr](const dpp::confirmation_callback_t& callback) // catch error from callback
                                                 {
                                                     if (!callback.is_error())
                                                     {
                                                         bot.log(dpp::ll_info, "ttt game initialize: succeed");
+                                                        itr->first.set_game_origin(std::get<dpp::message>(callback.value));
                                                     }
                                                     else
                                                     {
@@ -399,11 +429,75 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
 #pragma endregion
         }
     }
-        
-    
 }
 
 void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event)
 {
+    // fetch out global ttt storage
+    if (!ttt_list_g.empty())
+    {
+        logger::comment("on_ttt_interaction()");
+        for (auto itr = ttt_list_g.begin(); itr != ttt_list_g.end(); itr++) // iterate thru our saved list
+        {
+            /* setup */
+            dpp::snowflake player_1 = itr->second.get_user().first;
+            dpp::snowflake player_2 = itr->second.get_user().second;
+            short player = 0; /* player who pressed the button (1 or 2) */
+            if (event.command.usr.id == player_1) player = 1;
+            else if (event.command.usr.id == player_2) player = 2;
 
+            /* person clicked the same message as game */
+            if (event.command.message_id == itr->first.get_game().id)
+            {
+                // itr->first.board[0][1].get_id
+
+                /* if correct player pressed */
+                if (event.command.usr.id == itr->first.this_turn().first)
+                {
+                    /* loop by 3X3 array and check for what is pressed */
+                    for (size_t i = 0; i < 3; i++)
+                    {
+                        for (size_t k = 0; k < 3; k++)
+                        {
+                            /* found the button user pressed */
+                            if (event.custom_id == itr->first.board[i][k].get_id())
+                            {
+                                itr->first.board[i][k].set_status(itr->first.this_turn().second);
+                                logger::trace(fmt::format("edited ttt button to [id:{}]", itr->first.board[i][k].status));
+                            }
+                        }
+                    }
+
+
+
+                    itr->first.swap_turn();
+                    auto updated_button = fetch_ttt_components(itr->first.board);
+
+                    event.reply(dpp::ir_update_message, dpp::message()
+                        .set_content(fmt::format("its <@{}>'s turn", itr->first.this_turn().first))
+                        .add_component(std::get<0>(updated_button))
+                        .add_component(std::get<1>(updated_button))
+                        .add_component(std::get<2>(updated_button))
+                    , [&bot, event, itr](dpp::confirmation_callback_t callback)
+                    {
+                        if (!callback.is_error())
+                        {
+                            logger::comment("successfull event.reply()!");
+                            itr->second.st.replied = true;
+                        }
+                        else
+                        {
+                            bot.log(dpp::ll_error, "error on event.reply(): " + callback.get_error().message);
+                            for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
+                        }
+                    }
+                    );
+
+                }
+
+            }
+
+
+        }
+    }
 }

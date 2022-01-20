@@ -9,6 +9,8 @@ private:
 	/* origin message id of this ttt */ 
 	dpp::message origin;  
     dpp::message game;
+    /* pair of this turn's player id and player's character(X, O) */
+    std::pair< dpp::snowflake, int > turn;
 
     int uid;
     dpp::snowflake player_1;
@@ -19,6 +21,7 @@ private:
 public:
     bool have_origin = false;
     bool have_game = false;
+
 
     struct confirm_button
     {
@@ -54,21 +57,19 @@ public:
         confirm_button(const dpp::snowflake player_1, const dpp::snowflake player_2);
     };
 
-    struct pair 
+    struct pair
     {
     private:
         std::string id;
 
         void init(std::string& pos);
     public:
-
-        struct status {
-            bool X = false;
-            bool O = false;
-            bool IDLE = true;
-        }; status st;
+        enum status_t { IDLE, X, O };
+        int status = IDLE;
 
         const std::string get_id() const { return this->id; }
+        void set_status(int stats) { status = stats; }
+
         // constructor
         pair(std::string pos);
         pair() = default; // make it default
@@ -97,6 +98,8 @@ public:
 
 	// --- Functions ---
     void init_game();
+    std::pair< dpp::snowflake, int >& this_turn() { return this->turn; };
+    void swap_turn();
 };
 
 
