@@ -2,7 +2,7 @@
 
 namespace util
 {
-	static enum Colors {
+	enum color {
 		AQUA = 0x00FFFF,
 		BLACK = 0x000000,
 		WHITE = 0xFFFFFF,

@@ -37,6 +37,7 @@ int main()
                catch (const std::exception& e)
                {    /* just in case, use standard std::cout logging if the logger somehow fail */
                    std::cout << dpp::utility::current_date_time() << " [" << dpp::utility::loglevel(event.severity) << "]: " << event.message << "\n";
+                   std::cout << dpp::utility::current_date_time() << " [" << dpp::utility::loglevel(dpp::ll_error) << "]: " << "failed to use logger::log, " << e.what() << "\n";
                }
 
            }

@@ -21,6 +21,9 @@ private:
 public:
     bool have_origin = false;
     bool have_game = false;
+    enum RESULT { IN_PROGRESS, EXPIRED, DRAW, WON };
+    RESULT result;
+    int turns = 0;
 
 
     struct confirm_button
@@ -66,6 +69,7 @@ public:
     public:
         enum status_t { IDLE, X, O };
         int status = IDLE;
+        bool won = false;
 
         const std::string get_id() const { return this->id; }
         void set_status(int stats) { status = stats; }
@@ -100,6 +104,9 @@ public:
     void init_game();
     std::pair< dpp::snowflake, int >& this_turn() { return this->turn; };
     void swap_turn();
+    dpp::message& fetch_ttt_turn(dpp::message& msg_to_fetch);
+    std::tuple<dpp::component, dpp::component, dpp::component> fetch_ttt_components(std::array<std::array<ttt::pair, 3>, 3> board);
+    void fetch_winner();
 };
 
 
