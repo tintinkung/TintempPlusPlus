@@ -379,12 +379,31 @@ void on_confirm_click(dpp::cluster& bot, const dpp::button_click_t& event)
             dpp::snowflake player_2 = itr->second.get_user().second;
             short player = 0; /* player who pressed the button (1 or 2) */
             if (event.command.usr.id == player_1) player = 1;
-            else if (event.command.usr.id == player_2) player = 2;
+            if (event.command.usr.id == player_2) player = 2;
+
+            /* someone that's not challenger pressthe button, warn them */
+            if (player == 0)
+            {
+                event.reply(dpp::ir_channel_message_with_source, dpp::message()
+                    .set_content(fmt::format("<@{}> that's not your button!", event.command.usr.id))
+                    .set_allowed_mentions(false, false, false, false, { event.command.usr.id }, {})
+                    .set_flags(dpp::m_ephemeral)
+                    , [event, itr](dpp::confirmation_callback_t callback)
+                {
+                    if (!callback.is_error())
+                    {
+                        logger::comment("successfull warning message on event.reply()!");
+                    }
+                    else
+                    {
+                        logger::error("error on event.reply(): ");
+                        for (auto i : callback.get_error().errors) { logger::trace(i.reason); }
+                    }
+                });
+                return;
+            }
 
 #pragma region ANSWERED_YES
-            /*[TODO]: filter event if event is ended
-             *
-             */
             /* pressed the "YES" button */
             if (event.custom_id == itr->second.get_button_id().first)
             {
@@ -578,7 +597,6 @@ void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event)
                             if (!callback.is_error())
                             {
                                 logger::comment("successfull event.reply()!");
-
                                 
                                 /* check result */
                                 dpp::embed result_embed;
@@ -588,14 +606,14 @@ void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event)
                                     case ttt::RESULT::WON:
                                     {
                                         /* winner message */
-                                        result_embed.set_description(fmt::format("<@{}> won!", itr->first.this_turn().first)).set_color(util::color::GREEN);
+                                        result_embed.set_description(fmt::format("<@{}> won!", event.command.usr.id)).set_color(util::color::GREEN);
 
                                         has_result = true;
                                         break;
                                     }
                                     case ttt::RESULT::DRAW:
                                     {
-                                        result_embed.set_description(fmt::format("draw!", itr->first.this_turn().first)).set_color(util::color::WHITE);
+                                        result_embed.set_description(fmt::format("draw!", event.command.usr.id)).set_color(util::color::WHITE);
                            
                                         has_result = true;
                                         break;
@@ -610,11 +628,13 @@ void on_ttt_interaction(dpp::cluster& bot, const dpp::button_click_t& event)
 
                                 bot.message_create(dpp::message(event.command.channel_id, result_embed)
                                     .set_reference(itr->first.get_game().id, itr->first.get_game().guild_id, itr->first.get_game().channel_id) // make it reply to game message
-                                    , [&bot](const dpp::confirmation_callback_t& callback) // catch error from callback
+                                    , [&bot, &itr](const dpp::confirmation_callback_t& callback) // catch error from callback
                                     {
                                         if (!callback.is_error())
                                         {
-                                            bot.log(dpp::ll_info, "successfully deploy ttt winner message");
+                                            bot.log(dpp::ll_info, "successfully deploy ttt result message");
+                                            /* the game has finished, we no longer wanted to store the data anymore */
+                                            erase_one_from_list(itr);
                                         }
                                         else
                                         {

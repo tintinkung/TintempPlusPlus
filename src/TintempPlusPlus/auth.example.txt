@@ -1,0 +1,5 @@
+#pragma once
+const char* TOKEN = "YOUR_BOT_TOKEN_HERE";
+const char* PREFIX = "ANY_PREFERRED_PREFIX";
+
+/**[NOTE]: rename this file to auth.hpp and fill up to variable */

@@ -5,6 +5,7 @@
 #include "./auth.hpp"
 #include "./tictactoe.hpp"
 #include "./utility.h"
+#include "./timer.hpp"
 
 #pragma region pre-declared functions
 
@@ -20,9 +21,10 @@ void ping(dpp::cluster &bot, dpp::message_create_t &message);
 int main()
 {
 /* login */
+    // Allow overriding of author id from remote start code
     dpp::cluster bot(TOKEN);
     try 
-    {
+    {    
         bot.on_ready([&bot](const dpp::ready_t& event) {
             bot.log(dpp::ll_info, "Logged in as " + bot.me.username);
         });
@@ -42,16 +44,16 @@ int main()
 
            }
         });
-         
+
     }
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << "\n";
     }
 
+
 /* runtime */
     initCommands(bot);
     initButtons(bot);
-
 
     bot.start(false);
     return 0;
@@ -112,6 +114,50 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
     std::vector mention = message.msg.mentions; 
     if (mention.size() > 0) 
     {   
+#pragma region error_filter
+        if (mention[0].first.is_bot())
+        {
+            bot.message_create(dpp::message(message.msg.channel_id, "bot can't play you bruh")
+                .set_reference(message.msg.id, message.msg.guild_id, message.msg.channel_id)
+                .set_allowed_mentions(false, false, false, true, { message.msg.author.id }, {})
+                , ([&](const dpp::confirmation_callback_t& callback) // catch error from callback
+                {
+                    if (!callback.is_error())
+                    {
+                        bot.log(dpp::ll_trace, "command exit: succeed");
+                    }
+                    else
+                    {
+                        bot.log(dpp::ll_error, "command exit: " + callback.get_error().message);
+                    }
+                })
+            );
+            return;
+        }
+
+        if (mention[0].first.id == message.msg.author.id)
+        {
+            bot.message_create(dpp::message(message.msg.channel_id, "hey, you can't play with yourself")
+                .set_reference(message.msg.id, message.msg.guild_id, message.msg.channel_id)
+                .set_allowed_mentions(false, false, false, true, { message.msg.author.id }, {})
+                , ([&](const dpp::confirmation_callback_t& callback) // catch error from callback
+                    {
+                        if (!callback.is_error())
+                        {
+                            bot.log(dpp::ll_trace, "command exit: succeed");
+                        }
+                        else
+                        {
+                            bot.log(dpp::ll_error, "command exit: " + callback.get_error().message);
+                        }
+                    }
+                )
+            );
+            return;
+
+        }
+#pragma endregion
+
          /*  init a new ttt operation
          │
          ├─ 📂ttt_opt: std::pair
@@ -173,147 +219,6 @@ void tictactoe(dpp::cluster& bot, dpp::message_create_t& message)
             )
         );
     }
-
-#pragma region unused
-
-
-
-//    // ======================
-//
-//    enum status {
-//        IDLE,
-//        IS_X,
-//        IS_O,
-//        EXPIRED
-//    };
-//    struct button {
-//        status status;
-//        std::stringstream id;
-//        
-//    };
-//
-//    UniqueID ttt_id;
-//    ttt this_ttt(ttt_id.id);
-//
-//    dpp::snowflake this_message;
-//    UniqueID uid_1, uid_2, uid_3, uid_4, uid_5, uid_6, uid_7, uid_8, uid_9;
-//    button ttt_000, ttt_001, ttt_002, ttt_100, ttt_101, ttt_102, ttt_200, ttt_201, ttt_202;
-//    ttt_000.id << "ttt_" << uid_1.id << "_<000>"; 
-//    ttt_001.id << "ttt_" << uid_1.id << "_<001>"; 
-//    ttt_002.id << "ttt_" << uid_1.id << "_<002>";
-//    ttt_100.id << "ttt_" << uid_1.id << "_<100>";
-//    ttt_101.id << "ttt_" << uid_1.id << "_<101>";
-//    ttt_102.id << "ttt_" << uid_1.id << "_<102>";
-//    ttt_200.id << "ttt_" << uid_1.id << "_<200>";
-//    ttt_201.id << "ttt_" << uid_1.id << "_<201>";
-//    ttt_202.id << "ttt_" << uid_1.id << "_<202>";
-//                
-//    dpp::component row_1, row_2, row_3;
-//#pragma region components_row
-//    row_1.add_component(
-//        dpp::component()
-//            .set_label("0 0")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🗿")
-//            .set_style(dpp::cos_secondary)
-//            .set_id(ttt_000.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("0 1")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🧻")
-//            .set_style(dpp::cos_success)
-//            .set_id(ttt_001.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("0 2")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"⚔")
-//            .set_style(dpp::cos_primary)
-//            .set_id(ttt_002.id.str())
-//        );
-//    row_2.add_component(
-//        dpp::component()
-//            .set_label("1 0")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🗿")
-//            .set_style(dpp::cos_secondary)
-//            .set_id(ttt_100.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("1 1")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🧻")
-//            .set_style(dpp::cos_success)
-//            .set_id(ttt_101.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("1 2")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"⚔")
-//            .set_style(dpp::cos_primary)
-//            .set_id(ttt_102.id.str())
-//        );
-//    row_3.add_component(
-//        dpp::component()
-//            .set_label("2 0")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🗿")
-//            .set_style(dpp::cos_secondary)
-//            .set_id(ttt_200.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("2 1")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"🧻")
-//            .set_style(dpp::cos_success)
-//            .set_id(ttt_201.id.str())
-//        )
-//        .add_component(
-//            dpp::component()
-//            .set_label("2 2")
-//            .set_type(dpp::cot_button)
-//            //.set_emoji(u8"⚔")
-//            .set_style(dpp::cos_primary)
-//            .set_id(ttt_202.id.str())
-//        );
-//#pragma endregion components_row
-//
-//    
-//    bot.message_create(dpp::message(message.msg.channel_id, ping_embed)
-//        .add_component(row_1).add_component(row_2).add_component(row_3)
-//        , ([&](const dpp::confirmation_callback_t& callback) // catch error from callback
-//            {
-//
-//                if (!callback.is_error())
-//                {
-//                    bot.log(dpp::ll_info, "command exit: succeed");
-//                    auto deployed_msg = std::get<dpp::message>(callback.value); //get message object from a callback.value
-//
-//                    std::cout << "grabbing msg : " << deployed_msg.id << "\n";
-//                    on_deploy_button(bot, deployed_msg, ping_embed);
-//                    
-//                }      
-//                else
-//                {
-//                    bot.log(dpp::ll_warning, "command exit: " + callback.get_error().message);
-//                }
-//                    
-//                // std::cout << "before message: " << message.msg.id << "\n";
-//                // this_ttt.set_origin(message.msg.id);
-//                // std::cout << "captured message: " << this_ttt.get_origin() << "\n";
-//        
-//               
-//
-//            }
-//        )
-//    );
-#pragma endregion
 }
 
 #pragma endregion
